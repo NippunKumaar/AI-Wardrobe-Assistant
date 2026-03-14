@@ -1,0 +1,17 @@
+# Virtual environment
+aiwardrobeassistant/
+venv/
+.env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+
+# Streamlit cache
+.streamlit/
+
+# Local data
+wardrobe_images/
