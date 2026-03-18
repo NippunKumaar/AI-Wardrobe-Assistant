@@ -6,16 +6,40 @@ def get_recommendations(color, garment_type):
             "event": ("light blue", 85, "Professional and clean for meetings."),
             "genz": ("beige", 75, "Modern neutral pairing.")
         },
-
         "navy": {
-            "daily": ("white", 95, "Timeless navy-white formal combination."),
+            "daily": ("white", 95, "Timeless and safe formal combination."),
             "event": ("pink", 85, "Elegant contrast suitable for events."),
             "genz": ("lavender", 75, "Trendy yet formal palette.")
+        },
+        "grey": {
+            "daily": ("white", 95, "Neutral and very versatile."),
+            "event": ("blue", 85, "Professional and sharp look."),
+            "genz": ("maroon", 75, "Adds personality without losing formality.")
         }
     }
 
+    # fallback if color not found
     if color not in rules:
-        return []
+        return [
+            {
+                "category": "Daily Wear",
+                "color": "white",
+                "confidence": 80,
+                "reason": "Safe default pairing."
+            },
+            {
+                "category": "Event Wear",
+                "color": "light blue",
+                "confidence": 75,
+                "reason": "Balanced professional look."
+            },
+            {
+                "category": "Gen Z Style",
+                "color": "beige",
+                "confidence": 70,
+                "reason": "Modern neutral combination."
+            }
+        ]
 
     data = rules[color]
 
