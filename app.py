@@ -33,8 +33,9 @@ if st.button("Analyze Outfit"):
         st.warning("Please capture or upload an image.")
 
     else:
-        detected_color = get_dominant_color(image)
+        detected_color, color_family = get_dominant_color(image)
         st.write(f"Detected Color: {detected_color}")
+        st.write(f"Color Family: {color_family}")
 
         recommendations = get_recommendations(
             detected_color,

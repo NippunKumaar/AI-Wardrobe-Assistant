@@ -36,44 +36,36 @@ def rgb_to_hsv(image_array):
     return hsv
 
 
-def get_dominant_color(image: Image.Image):
+def get_dominant_color(image):
 
-    # resize to reduce computation
+    # resize
     image = image.resize((150, 150))
-
     img_array = np.array(image)
 
     h, w, _ = img_array.shape
 
-    # crop center region (reduce background influence)
-    center_crop = img_array[
-    int(h*0.25):int(h*0.75),
-    int(w*0.25):int(w*0.75)
+    # tighter center crop (important)
+    crop = img_array[
+        int(h*0.35):int(h*0.65),
+        int(w*0.35):int(w*0.65)
     ]
 
-    pixels = center_crop.reshape(-1, 3)
+    # flatten pixels
+    pixels = crop.reshape(-1, 3)
 
-    # KMeans clustering
-    kmeans = KMeans(n_clusters=3, random_state=42)
-    kmeans.fit(pixels)
+    # take median color (robust to noise)
+    median_rgb = np.median(pixels, axis=0)
 
-    labels = kmeans.labels_
-    clusters = kmeans.cluster_centers_
+    r, g, b = median_rgb
 
-    counts = np.bincount(labels)
-
-    # get top 2 clusters
-    top_indices = counts.argsort()[-2:][::-1]
-
-    candidate_clusters = clusters[top_indices]
-
-    dominant_rgb = select_best_cluster(candidate_clusters)
-
-    hsv = rgb_to_hsv(dominant_rgb.reshape(1,1,3)).reshape(3)
+    # convert to HSV
+    hsv = rgb_to_hsv(median_rgb.reshape(1,1,3)).reshape(3)
     h, s, v = hsv
-    r, g, b = dominant_rgb
 
-    return classify_color(h, s, v, r, g, b)
+    color = classify_color(h, s, v, r, g, b)
+    family = map_to_family(color)
+
+    return color, family
 
 
 def classify_color(h, s, v, r,g, b):
@@ -130,11 +122,49 @@ def classify_color(h, s, v, r,g, b):
     return "unknown"
 
 def select_best_cluster(clusters):
-    # choose cluster with highest red dominance for brown-like colors
     scores = []
 
     for r, g, b in clusters:
-        score = r - b  # brown has strong red dominance over blue
+        # compute simple saturation proxy
+        max_c = max(r, g, b)
+        min_c = min(r, g, b)
+        saturation = (max_c - min_c) / (max_c + 1e-5)
+
+        # scoring:
+        # prefer clusters with:
+        # - moderate brightness
+        # - lower saturation (for neutrals)
+        # - but not too dark
+
+        brightness = (r + g + b) / 3
+
+        score = (
+            (1 - saturation) * 0.6 +   # prefer low saturation
+            (brightness / 255) * 0.4   # prefer visible brightness
+        )
+
         scores.append(score)
 
     return clusters[np.argmax(scores)]
+
+
+def map_to_family(color):
+
+    mapping = {
+        "black": "dark_neutral",
+        "grey": "dark_neutral",
+        "white": "light_neutral",
+
+        "blue": "blue_family",
+
+        "brown": "earth_tones",
+        "yellow": "earth_tones",
+        "orange": "earth_tones",
+
+        "red": "warm_colors",
+        "pink": "warm_colors",
+
+        "green": "cool_colors",
+        "purple": "cool_colors"
+    }
+    return mapping.get(color, "unknown")
